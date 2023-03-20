@@ -1,4 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:chat_app/chatting/chat/message.dart';
+import 'package:chat_app/chatting/chat/new_message.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -46,33 +47,15 @@ class _ChatScreenState extends State<ChatScreen> {
           )
         ],
       ),
-      body: StreamBuilder(
-        builder: (BuildContext context,
-            AsyncSnapshot<QuerySnapshot<Map<String, dynamic>>> snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-          final docs = snapshot.data!.docs;
-          return ListView.builder(
-            itemBuilder: (context, index) {
-              return Container(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  docs[index]['text'],
-                  style: const TextStyle(
-                    fontSize: 20.0,
-                  ),
-                ),
-              );
-            },
-            itemCount: docs.length,
-          );
-        },
-        stream: FirebaseFirestore.instance
-            .collection('chats/jWJD3RLaQSE6G89Bmwbv/message')
-            .snapshots(),
+      body: Container(
+        child: Column(
+          children: const [
+            Expanded(
+              child: Message(),
+            ),
+            NewMessage(),
+          ],
+        ),
       ),
     );
   }
