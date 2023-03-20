@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 class ChatBubble extends StatelessWidget {
-  const ChatBubble(this.message, this.isMe, {Key? key}) : super(key: key);
+  const ChatBubble(this.message, this.isMe, this.userName, {Key? key})
+      : super(key: key);
   final String message;
+  final String userName;
   final bool isMe;
 
   @override
@@ -15,7 +17,7 @@ class ChatBubble extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
           margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
           decoration: BoxDecoration(
-            color: isMe ? Colors.grey[300] : Colors.blue,
+            color: isMe ? Colors.blue : Colors.grey[300],
             borderRadius: BorderRadius.only(
               topLeft: const Radius.circular(12),
               topRight: const Radius.circular(12),
@@ -25,9 +27,21 @@ class ChatBubble extends StatelessWidget {
                   isMe ? const Radius.circular(12) : const Radius.circular(0),
             ),
           ),
-          child: Text(
-            message,
-            style: TextStyle(color: isMe ? Colors.black : Colors.white),
+          child: Column(
+            crossAxisAlignment:
+                isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            children: [
+              Text(
+                userName,
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isMe ? Colors.white : Colors.black),
+              ),
+              Text(
+                message,
+                style: TextStyle(color: isMe ? Colors.white : Colors.black),
+              ),
+            ],
           ),
         ),
       ],
