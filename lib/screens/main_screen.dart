@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:chat_app/add_image/add_image.dart';
 import 'package:chat_app/config/palette.dart';
 import 'package:chat_app/screens/chat_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 
@@ -21,6 +24,7 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
   String userName = '';
   String userEmail = '';
   String userPassword = '';
+  File? userPickedImage;
 
   void _tryValidatiom() {
     final isValid = _formKey.currentState!.validate();
@@ -29,13 +33,17 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
     }
   }
 
+  void pickedImage(File image) {
+    userPickedImage = image;
+  }
+
   void showAlert(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) {
-        return const Dialog(
+        return Dialog(
           backgroundColor: Colors.white,
-          child: AddImage(),
+          child: AddImage(pickedImage),
         );
       },
     );
@@ -193,17 +201,18 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                                       const SizedBox(
                                         width: 15,
                                       ),
-                                      GestureDetector(
-                                        onTap: () {
-                                          showAlert(context);
-                                        },
-                                        child: Icon(
-                                          Icons.image,
-                                          color: isSignupScreen
-                                              ? Colors.cyan
-                                              : Colors.grey[300],
-                                        ),
-                                      )
+                                      if (isSignupScreen)
+                                        GestureDetector(
+                                          onTap: () {
+                                            showAlert(context);
+                                          },
+                                          child: Icon(
+                                            Icons.image,
+                                            color: isSignupScreen
+                                                ? Colors.cyan
+                                                : Colors.grey[300],
+                                          ),
+                                        )
                                     ],
                                   ),
                                   if (isSignupScreen)
@@ -489,6 +498,18 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                         });
 
                         if (isSignupScreen) {
+                          if (userPickedImage == null) {
+                            setState(() {
+                              showSpinner = false;
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('please pick your image'),
+                                backgroundColor: Colors.blue,
+                              ),
+                            );
+                            return;
+                          }
                           _tryValidatiom();
                           try {
                             final newUser = await _authentication
@@ -496,11 +517,21 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                               email: userEmail,
                               password: userPassword,
                             );
+                            final refImage = FirebaseStorage.instance
+                                .ref()
+                                .child('picked_image')
+                                .child('${newUser.user!.uid}.png');
+
+                            await refImage.putFile(userPickedImage!);
+                            final url = await refImage.getDownloadURL();
                             await FirebaseFirestore.instance
                                 .collection('user')
                                 .doc(newUser.user!.uid)
-                                .set(
-                                    {'userName': userName, 'email': userEmail});
+                                .set({
+                              'userName': userName,
+                              'email': userEmail,
+                              'picked_image': url
+                            });
                             if (newUser.user != null) {
                               // ignore: use_build_context_synchronously
                               Navigator.push(
@@ -520,13 +551,15 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                             setState(() {
                               showSpinner = false;
                             });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    'Please check your email and password'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      'Please check your email and password'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
                           }
                         }
                         if (!isSignupScreen) {
